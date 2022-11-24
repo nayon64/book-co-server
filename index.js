@@ -24,19 +24,22 @@ const client = new MongoClient(uri, {
 });
 
 async function run() { 
+
+	// data collection 
 	const blogsCollection = client.db("bookAndCo").collection("blogs")
+	const bookCategorysCollection = client.db("bookAndCo").collection("bookCategorys")
+
+
 	app.get("/blogs", async (req, res) => {
 		const query = {}
 		const blogs=await blogsCollection.find(query).toArray()
 		res.send(blogs)
 	})
-	app.post("/blogs", async (req, res) => {
-		const doc = {
-      title: "Record of a Shriveled Datum",
-      content: "No bytes, no problem. Just insert a document, in MongoDB",
-		};
-		const result = await blogsCollection.insertOne(doc)
-		res.send(result)
+	
+	app.get('/categorys', async (req, res) => {
+		const query = {};
+    const categorys = await bookCategorysCollection.find(query).toArray();
+    res.send(categorys);
 	})
 }
 run().catch(console.dir);
