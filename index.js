@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
+const { application } = require("express");
 require("dotenv").config();
 
 const port = process.env.PORT || 5000;
@@ -22,10 +23,30 @@ const client = new MongoClient(uri, {
 async function run() {
   // data collection
   const blogsCollection = client.db("bookAndCo").collection("blogs");
-  const bookCategorysCollection = client
-    .db("bookAndCo")
-    .collection("bookCategorys");
+  const bookCategorysCollection = client.db("bookAndCo").collection("bookCategorys");
   const usersCollection = client.db("bookAndCo").collection("users");
+  const booksCollection = client.db("bookAndCo").collection("books");
+
+
+  // create jwt token 
+  app.get("/jwt", async (req, res) => {
+    const email = req.query.email;
+    const query = { email: email };
+    const user = await usersCollection.findOne(query);
+    if (user) {
+      const token = jwt.sign({ email }, process.env.SECRET_ACCESS_TOKEN, {
+        expiresIn: "30d",
+      });
+      return res.send({ accessToken: token });
+    }
+    res.status(403).send({ accessToken: "" });
+  })
+
+  app.get("/books", async (req, res) => {
+    const query = {}
+    const books = await booksCollection.find(query).toArray()
+    res.send(books) 
+  })
 
   app.get("/blogs", async (req, res) => {
     const query = {};
@@ -48,7 +69,7 @@ async function run() {
     const query = { email: userEmail };
     const checkedEmail = await usersCollection.findOne(query);
     if (checkedEmail) {
-      res.send({ message: "Your account was created." });
+      res.send({acknowledged:true, message: "Your account was created." });
 	}
 	else {
       const result = await usersCollection.insertOne(user);
