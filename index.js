@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
-const { application } = require("express");
 require("dotenv").config();
 
 const port = process.env.PORT || 5000;
@@ -27,8 +26,7 @@ async function run() {
   const usersCollection = client.db("bookAndCo").collection("users");
   const booksCollection = client.db("bookAndCo").collection("books");
 
-
-  // create jwt token 
+  // create jwt token
   app.get("/jwt", async (req, res) => {
     const email = req.query.email;
     const query = { email: email };
@@ -40,13 +38,21 @@ async function run() {
       return res.send({ accessToken: token });
     }
     res.status(403).send({ accessToken: "" });
-  })
+  });
 
-  app.get("/books", async (req, res) => {
-    const query = {}
-    const books = await booksCollection.find(query).toArray()
-    res.send(books) 
-  })
+  // cheack user admin role 
+  app.get("/users/admin/:email", async (req, res) => {
+    const email = req.params.email;
+    const query = { email };
+    const user = await usersCollection.findOne(query);
+    res.send({ isAdmin: user?.role === "Admin" });
+  });
+
+  app.get("/books/:id", async (req, res) => {
+    const query = {};
+    const books = await booksCollection.find(query).toArray();
+    res.send(books);
+  });
 
   app.get("/blogs", async (req, res) => {
     const query = {};
@@ -60,29 +66,34 @@ async function run() {
     res.send(categorys);
   });
 
-	
-	//new user create api 
+  //new user create api
   app.post("/users", async (req, res) => {
     const user = req.body;
-	  const userEmail = user.email;
-	  console.log(user)
+    const userEmail = user.email;
+    console.log(user);
     const query = { email: userEmail };
     const checkedEmail = await usersCollection.findOne(query);
     if (checkedEmail) {
-      res.send({acknowledged:true, message: "Your account was created." });
-	}
-	else {
+      res.send({ acknowledged: true, message: "Your account was created." });
+    } else {
       const result = await usersCollection.insertOne(user);
       res.send(result);
     }
   });
-	
-	// get all user 
-	app.get("/users", async (req, res) => {
-		const query = {}
-		const users = await usersCollection.find(query).toArray()
-		res.send(users)
-	})
+
+  // get all sellers 
+  app.get("/allSellers", async (req, res) => {
+    const query = { role: "Seller" }
+    const allSeller = await usersCollection.find(query).toArray();
+    res.send(allSeller)
+  })
+
+  // get all user
+  app.get("/allusers", async (req, res) => {
+    const query = {};
+    const users = await usersCollection.find(query).toArray();
+    res.send(users);
+  });
 
   // app.get("singleCatagory/:id", async (req, res) => {
   // 	const id = req.params.id
