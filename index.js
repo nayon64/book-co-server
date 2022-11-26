@@ -20,10 +20,11 @@ const client = new MongoClient(uri, {
 });
 
 async function run() {
-  
   // data collection
   const blogsCollection = client.db("bookAndCo").collection("blogs");
-  const bookCategorysCollection = client.db("bookAndCo").collection("bookCategorys");
+  const bookCategorysCollection = client
+    .db("bookAndCo")
+    .collection("bookCategorys");
   const usersCollection = client.db("bookAndCo").collection("users");
   const booksCollection = client.db("bookAndCo").collection("books");
 
@@ -41,7 +42,7 @@ async function run() {
     res.status(403).send({ accessToken: "" });
   });
 
-  // cheack user admin role 
+  // cheack user admin role
   app.get("/users/admin/:email", async (req, res) => {
     const email = req.params.email;
     const query = { email };
@@ -49,7 +50,7 @@ async function run() {
     res.send({ isAdmin: user?.role === "Admin" });
   });
 
-  // cheack user seller api 
+  // cheack user seller api
   app.get("/users/seller/:email", async (req, res) => {
     const email = req.params.email;
     const query = { email };
@@ -57,17 +58,63 @@ async function run() {
     res.send({ isSeller: user?.role === "Seller" });
   });
 
-  // add a book selling post in database 
+  // add a book selling post in database
   app.post("/books", async (req, res) => {
     const bookInfo = req.body;
-    const result = await booksCollection.insertOne(bookInfo)
-    res.send(result)
-  })
+    const result = await booksCollection.insertOne(bookInfo);
+    res.send(result);
+  });
 
-  app.get("/books/:id", async (req, res) => {
+  // get a seller all selling book update???????
+  app.get("/myBooks", async (req, res) => {
+    const email = req.query.email;
     const query = {};
     const books = await booksCollection.find(query).toArray();
     res.send(books);
+  });
+
+  // book item reported 
+  app.put("/bookReported/:id", async (req, res) => {
+    const id = req.params.id
+    const filter = { _id: ObjectId(id) }
+    const options = { upsert: true };
+    const updateDoc = {
+      $set: {
+        isReported:true,
+      },
+    };
+    const result = await booksCollection.updateOne(filter, updateDoc, options)
+    res.send(result)
+  })
+
+  
+
+  // book item booking 
+  app.put("/bookBooking/:id", async (req, res) => {
+    const id = req.params.id;
+    const filter = { _id: ObjectId(id) };
+    const options = { upsert: true };
+    const updateDoc = {
+      $set: {
+        isAvailable: false,
+      },
+    };
+    const result = await booksCollection.updateOne(filter, updateDoc, options);
+    res.send(result);
+  });
+
+  // single category product data
+  http: app.get("/singleCategory/:id", async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: ObjectId(id) };
+    const catagory = await bookCategorysCollection.findOne(query);
+    const catagoryName = catagory.category;
+    const filter = {
+      bookCategory: catagoryName,
+    };
+    console.log(filter);
+    const allSingleCategoryBook = await booksCollection.find(filter).toArray();
+    res.send(allSingleCategoryBook);
   });
 
   app.get("/blogs", async (req, res) => {
@@ -76,17 +123,20 @@ async function run() {
     res.send(blogs);
   });
 
-  // homepage book category api 
+  // homepage book category api
   app.get("/categorys", async (req, res) => {
     const query = {};
     const categorys = await bookCategorysCollection.find(query).toArray();
     res.send(categorys);
   });
 
-  // only book category name api 
+  // only book category name api
   app.get("/categoryNames", async (req, res) => {
     const query = {};
-    const categoryName = await bookCategorysCollection.find(query).project({category:1}).toArray();
+    const categoryName = await bookCategorysCollection
+      .find(query)
+      .project({ category: 1 })
+      .toArray();
     res.send(categoryName);
   });
 
@@ -105,19 +155,19 @@ async function run() {
     }
   });
 
-  // get all sellers 
+  // get all sellers
   app.get("/allSellers", async (req, res) => {
-    const query = { role: "Seller" }
+    const query = { role: "Seller" };
     const allSeller = await usersCollection.find(query).toArray();
-    res.send(allSeller)
-  })
+    res.send(allSeller);
+  });
 
   // get all buyers
   app.get("/allBuyers", async (req, res) => {
-    const query = { role: "Buyer" }
+    const query = { role: "Buyer" };
     const allBuyers = await usersCollection.find(query).toArray();
     res.send(allBuyers);
-  })
+  });
 
   // get all user
   app.get("/allusers", async (req, res) => {
@@ -125,15 +175,6 @@ async function run() {
     const users = await usersCollection.find(query).toArray();
     res.send(users);
   });
-
-  // app.get("singleCatagory/:id", async (req, res) => {
-  // 	const id = req.params.id
-  // 	const query = { _id: ObjectId(id) }
-  // 	const catagory = await bookCategorysCollection.findOne(query)
-  // 	const catagoryName = catagory.catagory
-  // 	const allSingleCategoryBook = await booksCollection.find(catagoryName).toArray()
-  // 	res.send(allSingleCategoryBook)
-  // })
 }
 run().catch(console.dir);
 
