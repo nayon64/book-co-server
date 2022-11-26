@@ -20,6 +20,7 @@ const client = new MongoClient(uri, {
 });
 
 async function run() {
+  
   // data collection
   const blogsCollection = client.db("bookAndCo").collection("blogs");
   const bookCategorysCollection = client.db("bookAndCo").collection("bookCategorys");
@@ -48,6 +49,21 @@ async function run() {
     res.send({ isAdmin: user?.role === "Admin" });
   });
 
+  // cheack user seller api 
+  app.get("/users/seller/:email", async (req, res) => {
+    const email = req.params.email;
+    const query = { email };
+    const user = await usersCollection.findOne(query);
+    res.send({ isSeller: user?.role === "Seller" });
+  });
+
+  // add a book selling post in database 
+  app.post("/books", async (req, res) => {
+    const bookInfo = req.body;
+    const result = await booksCollection.insertOne(bookInfo)
+    res.send(result)
+  })
+
   app.get("/books/:id", async (req, res) => {
     const query = {};
     const books = await booksCollection.find(query).toArray();
@@ -60,10 +76,18 @@ async function run() {
     res.send(blogs);
   });
 
+  // homepage book category api 
   app.get("/categorys", async (req, res) => {
     const query = {};
     const categorys = await bookCategorysCollection.find(query).toArray();
     res.send(categorys);
+  });
+
+  // only book category name api 
+  app.get("/categoryNames", async (req, res) => {
+    const query = {};
+    const categoryName = await bookCategorysCollection.find(query).project({category:1}).toArray();
+    res.send(categoryName);
   });
 
   //new user create api
