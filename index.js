@@ -65,10 +65,12 @@ async function run() {
     res.send(result);
   });
 
-  // get a seller all selling book update???????
+  // get a seller all selling book 
   app.get("/myBooks", async (req, res) => {
     const email = req.query.email;
-    const query = {};
+    const query = {
+      sellerEmail:email,
+    };
     const books = await booksCollection.find(query).toArray();
     res.send(books);
   });
@@ -103,6 +105,30 @@ async function run() {
     res.send(result);
   });
 
+
+  // add for advertised 
+  app.put("/advertised/:id", async (req, res) => {
+    const id = req.params.id;
+    const filter = { _id: ObjectId(id) };
+    const options = { upsert: true };
+    const updateDoc = {
+      $set: {
+        isAdvertised: true,
+      },
+    };
+    const result = await booksCollection.updateOne(filter, updateDoc, options);
+    res.send(result);
+  });
+
+  // get advertised book itmes 
+  app.get("/advertised", async (req, res) => {
+    const query = {
+      isAdvertised: true
+    };
+    const avertisedItmes = await booksCollection.find(query).toArray()
+    res.send(avertisedItmes)
+  })
+
   // single category product data
   http: app.get("/singleCategory/:id", async (req, res) => {
     const id = req.params.id;
@@ -112,7 +138,6 @@ async function run() {
     const filter = {
       bookCategory: catagoryName,
     };
-    console.log(filter);
     const allSingleCategoryBook = await booksCollection.find(filter).toArray();
     res.send(allSingleCategoryBook);
   });
@@ -144,7 +169,6 @@ async function run() {
   app.post("/users", async (req, res) => {
     const user = req.body;
     const userEmail = user.email;
-    console.log(user);
     const query = { email: userEmail };
     const checkedEmail = await usersCollection.findOne(query);
     if (checkedEmail) {
