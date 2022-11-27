@@ -89,6 +89,23 @@ async function run() {
     res.send(result)
   })
 
+  // get all reported item for admin 
+  app.get("/reportedItems", async (req, res) => {
+    const filter = {
+      isReported:true,
+    };
+    const reportedItems = await booksCollection.find(filter).toArray()
+    res.send(reportedItems)
+  })
+
+  // reported item delete by admin 
+  app.delete("/reportedItems/:id", async (req, res) => {
+    const id = req.params.id
+    const query = { _id: ObjectId(id) }
+    const result= await booksCollection.deleteOne(query)
+    res.send(result)
+  });
+
   
 
   // book item booking 
