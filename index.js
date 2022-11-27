@@ -28,7 +28,6 @@ async function run() {
   const usersCollection = client.db("bookAndCo").collection("users");
   const booksCollection = client.db("bookAndCo").collection("books");
   const bookingCollection = client.db("bookAndCo").collection("bookingBooks");
-  
 
   // create jwt token
   app.get("/jwt", async (req, res) => {
@@ -60,37 +59,54 @@ async function run() {
     res.send({ isSeller: user?.role === "Seller" });
   });
 
+
+  app.put("/admin/sellerVarified", async (req, res) => {
+    const email = req.query.email;
+    const filter = {
+    email:email
+    }
+    const options = { upsert: true };
+    const updateDoc = {
+      $set: {
+        sellerVarified:true,
+      },
+    };
+    const result = await usersCollection.updateOne(filter, updateDoc, options)
+    res.send(result)
+  })
+
   // booking a book item
-  app.post("/seller/booking", async (req, res) => {
+  app.post("/bookingItem", async (req, res) => {
     const bookingBook = req.body;
     const bookItemId = bookingBook.bookItemId;
     const buyerEmail = bookingBook.buyerEmail;
 
-    console.log(bookItemId,buyerEmail)
     const query = {
       bookItemId: bookItemId,
       buyerEmail: buyerEmail,
     };
-    console.log(query)
-    const findBook = await bookingCollection.findOne(query)
-    console.log("findbook",findBook)
-    if(findBook){
-      return res.send({ acknowledged: false,message:"All ready book the book" });
-    }
-    const result = await bookingCollection.insertOne(bookingBook)
-    res.send(result)
     
-  })
+    const findBook = await bookingCollection.findOne(query);
+   
+    if (findBook) {
+      return res.send({
+        acknowledged: false,
+        message: "All ready book the book",
+      });
+    }
+    const result = await bookingCollection.insertOne(bookingBook);
+    res.send(result);
+  });
 
   // add a book selling post in database
-  app.post("/books", async (req, res) => {
+  app.post("/seller/addBookItem", async (req, res) => {
     const bookInfo = req.body;
     const result = await booksCollection.insertOne(bookInfo);
     res.send(result);
   });
 
   // get a seller all selling book
-  app.get("/myBooks", async (req, res) => {
+  app.get("/seller/myBooks", async (req, res) => {
     const email = req.query.email;
     const query = {
       sellerEmail: email,
@@ -123,31 +139,17 @@ async function run() {
   });
 
   // reported item delete by admin
-  app.delete("/reportedItems/:id", async (req, res) => {
+  app.delete("/admin/reportedItems/:id", async (req, res) => {
     const id = req.params.id;
     const query = { _id: ObjectId(id) };
     const result = await booksCollection.deleteOne(query);
     res.send(result);
   });
 
-  // book item booking confirmd api  /bookBooking/:id
-  app.put("/bookBooking/:id", async (req, res) => {
-    const id = req.params.id;
-    const filter = { _id: ObjectId(id) };
-    const options = { upsert: true };
-    const updateDoc = {
-      $set: {
-        isAvailable: false,
-      },
-    };
-    const result = await booksCollection.updateOne(filter, updateDoc, options);
-    res.send(result);
-  });
+  
 
-
-
-  // add for advertised api
-  app.put("/advertised/:id", async (req, res) => {
+  // add for advertised api 
+  app.put("/seller/advertised/:id", async (req, res) => {
     const id = req.params.id;
     const filter = { _id: ObjectId(id) };
     const options = { upsert: true };
