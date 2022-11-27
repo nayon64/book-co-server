@@ -162,6 +162,17 @@ async function run() {
     res.send(result);
   });
 
+  // get single buyer all order
+  app.get("/buyer/myOrders", async(req, res) => {
+    const email = req.query.email
+    console.log(email)
+    const query = {
+      buyerEmail:email
+    };
+    const myOrders=await bookingCollection.find(query).toArray()
+    res.send(myOrders)
+  })
+
   // get advertised book itmes
   app.get("/advertised", async (req, res) => {
     const query = {
