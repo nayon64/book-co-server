@@ -266,7 +266,7 @@ async function run() {
 
 
   // reported item delete by admin
-  app.delete("/admin/reportedItems/:id",verifyJWT,verifyAdmin, async (req, res) => {
+  app.delete("/admin/reportedItems/:id",verifyJWT, async (req, res) => {
     const id = req.params.id;
     const query = { _id: ObjectId(id) };
     const result = await booksCollection.deleteOne(query);
