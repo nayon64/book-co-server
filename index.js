@@ -100,8 +100,14 @@ async function run() {
     const filter = { _id: ObjectId(id) };
     const paymentBook = await bookingCollection.findOne(filter);
     const bookItemId = paymentBook.bookItemId;
-    const deleteQuery = { _id: ObjectId(bookItemId) };
-    const bookDelete = await booksCollection.deleteOne(deleteQuery);
+    const bookfilter = { _id: ObjectId(bookItemId) };
+    const options = { upsert: true }
+    const changeAvailable = {
+      $set: {
+        isAvailable: false,
+      },
+    };
+    const updateAvailable=await booksCollection.updateOne(bookfilter,changeAvailable,options)
     const updatedDoc = {
       $set: {
         paid: true,
@@ -304,6 +310,7 @@ async function run() {
   app.get("/advertised", async (req, res) => {
     const query = {
       isAdvertised: true,
+      isAvailable: true,
     };
     const avertisedItmes = await booksCollection.find(query).toArray();
     res.send(avertisedItmes);
@@ -312,11 +319,14 @@ async function run() {
   // single category product data
    app.get("/singleCategory/:id",verifyJWT, async (req, res) => {
      const id = req.params.id;
-     const query = { _id: ObjectId(id) };
+     const query = {
+       _id: ObjectId(id),
+     };
      const catagory = await bookCategorysCollection.findOne(query);
      const catagoryName = catagory.category;
      const filter = {
        bookCategory: catagoryName,
+       isAvailable: true,
      };
 
      const categoryBooks = await booksCollection.find(filter).toArray();
