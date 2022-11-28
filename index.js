@@ -97,6 +97,22 @@ async function run() {
     const user = await usersCollection.findOne(query);
     res.send({ isBuyer: user?.role === "Buyer" });
   });
+  
+  // cheack user admin role
+  app.get("/seller/verifySeller", async (req, res) => {
+
+    const sellerEmail=req.query.email
+
+    const sellerQuery = {
+      role: "Seller",
+      sellerVarified: true,
+    };
+    const varifiedSellers = await usersCollection.find(sellerQuery).toArray();
+
+    const varify = varifiedSellers.find((seller) => seller.email===sellerEmail);
+    console.log(varify);
+    res.send({isVarify:varify?.sellerVarified===true})
+  });
 
   // cheack user seller api
   app.get("/users/seller/:email", async (req, res) => {
@@ -154,12 +170,14 @@ async function run() {
     res.send(result);
   });
 
+
   // add a book selling post in database
   app.post("/seller/addBookItem", async (req, res) => {
     const bookInfo = req.body;
     const result = await booksCollection.insertOne(bookInfo);
     res.send(result);
   });
+
 
   // get a seller all selling book
   app.get("/seller/myBooks", async (req, res) => {
@@ -170,6 +188,7 @@ async function run() {
     const books = await booksCollection.find(query).toArray();
     res.send(books);
   });
+
 
   // book item reported
   app.put("/bookReported/:id", async (req, res) => {
@@ -185,6 +204,7 @@ async function run() {
     res.send(result);
   });
 
+
   // get all reported item for admin
   app.get("/reportedItems", async (req, res) => {
     const filter = {
@@ -194,6 +214,7 @@ async function run() {
     res.send(reportedItems);
   });
 
+
   // reported item delete by admin
   app.delete("/admin/reportedItems/:id", async (req, res) => {
     const id = req.params.id;
@@ -201,6 +222,7 @@ async function run() {
     const result = await booksCollection.deleteOne(query);
     res.send(result);
   });
+
 
   // add for advertised api
   app.put("/seller/advertised/:id", async (req, res) => {
@@ -215,6 +237,7 @@ async function run() {
     const result = await booksCollection.updateOne(filter, updateDoc, options);
     res.send(result);
   });
+
 
   // get single buyer all order
   app.get("/buyer/myOrders", async (req, res) => {
@@ -253,6 +276,7 @@ async function run() {
     };
 
     const categoryBooks = await booksCollection.find(filter).toArray();
+    
 
     res.send(categoryBooks);
   });
