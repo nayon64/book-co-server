@@ -46,7 +46,6 @@ async function run() {
       amount: amount,
       payment_method_types: ["card"],
     });
-    console.log(paymentIntent);
     res.send({
       clientSecret: paymentIntent.client_secret,
     });
@@ -58,6 +57,10 @@ async function run() {
     const result = await paymentsCollection.insertOne(payment);
     const id = payment.bookingId;
     const filter = { _id: ObjectId(id) };
+    const paymentBook = await bookingCollection.findOne(filter)
+    const bookItemId = paymentBook.bookItemId;
+    const deleteQuery = { _id: ObjectId(bookItemId) };
+    const bookDelete = await booksCollection.deleteOne(deleteQuery)
     const updatedDoc = {
       $set: {
         paid: true,
@@ -204,7 +207,6 @@ async function run() {
   // get single buyer all order
   app.get("/buyer/myOrders", async(req, res) => {
     const email = req.query.email
-    console.log(email)
     const query = {
       buyerEmail:email
     };
@@ -237,8 +239,10 @@ async function run() {
     const filter = {
       bookCategory: catagoryName,
     };
-    const allSingleCategoryBook = await booksCollection.find(filter).toArray();
-    res.send(allSingleCategoryBook);
+
+    const categoryBooks = await booksCollection.find(filter).toArray();
+
+    res.send(categoryBooks);
   });
 
   app.get("/blogs", async (req, res) => {
