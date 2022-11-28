@@ -22,8 +22,6 @@ const client = new MongoClient(uri, {
 });
 
 async function run() {
-
-
   // data collection
   const blogsCollection = client.db("bookAndCo").collection("blogs");
   const bookCategorysCollection = client
@@ -34,8 +32,7 @@ async function run() {
   const bookingCollection = client.db("bookAndCo").collection("bookingBooks");
   const paymentsCollection = client.db("bookAndCo").collection("paymentsItem");
 
-
-  // booking item payment api 
+  // booking item payment api
   app.post("/create-payment-intent", async (req, res) => {
     const booking = req.body;
     const price = booking.price;
@@ -51,16 +48,16 @@ async function run() {
     });
   });
 
-// set payment item in data base 
+  // set payment item in data base
   app.post("/payments", async (req, res) => {
     const payment = req.body;
     const result = await paymentsCollection.insertOne(payment);
     const id = payment.bookingId;
     const filter = { _id: ObjectId(id) };
-    const paymentBook = await bookingCollection.findOne(filter)
+    const paymentBook = await bookingCollection.findOne(filter);
     const bookItemId = paymentBook.bookItemId;
     const deleteQuery = { _id: ObjectId(bookItemId) };
-    const bookDelete = await booksCollection.deleteOne(deleteQuery)
+    const bookDelete = await booksCollection.deleteOne(deleteQuery);
     const updatedDoc = {
       $set: {
         paid: true,
@@ -93,6 +90,14 @@ async function run() {
     res.send({ isAdmin: user?.role === "Admin" });
   });
 
+  // cheack user admin role
+  app.get("/users/buyer/:email", async (req, res) => {
+    const email = req.params.email;
+    const query = { email };
+    const user = await usersCollection.findOne(query);
+    res.send({ isBuyer: user?.role === "Buyer" });
+  });
+
   // cheack user seller api
   app.get("/users/seller/:email", async (req, res) => {
     const email = req.params.email;
@@ -101,21 +106,30 @@ async function run() {
     res.send({ isSeller: user?.role === "Seller" });
   });
 
-
   app.put("/admin/sellerVarified", async (req, res) => {
     const email = req.query.email;
     const filter = {
-    email:email
-    }
+      email: email,
+    };
     const options = { upsert: true };
     const updateDoc = {
       $set: {
-        sellerVarified:true,
+        sellerVarified: true,
       },
     };
-    const result = await usersCollection.updateOne(filter, updateDoc, options)
-    res.send(result)
-  })
+    const result = await usersCollection.updateOne(filter, updateDoc, options);
+    res.send(result);
+  });
+
+  // user delete api 
+  app.put("/admin/deleteUser/:id", async (req, res) => {
+    const id = req.params.id
+    const query = {
+      _id:ObjectId(id)
+    }
+    const reslut = await usersCollection.deleteOne(query)
+    res.send(reslut)
+  });
 
   // booking a book item
   app.post("/bookingItem", async (req, res) => {
@@ -127,9 +141,9 @@ async function run() {
       bookItemId: bookItemId,
       buyerEmail: buyerEmail,
     };
-    
+
     const findBook = await bookingCollection.findOne(query);
-   
+
     if (findBook) {
       return res.send({
         acknowledged: false,
@@ -188,9 +202,7 @@ async function run() {
     res.send(result);
   });
 
-  
-
-  // add for advertised api 
+  // add for advertised api
   app.put("/seller/advertised/:id", async (req, res) => {
     const id = req.params.id;
     const filter = { _id: ObjectId(id) };
@@ -205,20 +217,20 @@ async function run() {
   });
 
   // get single buyer all order
-  app.get("/buyer/myOrders", async(req, res) => {
-    const email = req.query.email
+  app.get("/buyer/myOrders", async (req, res) => {
+    const email = req.query.email;
     const query = {
-      buyerEmail:email
+      buyerEmail: email,
     };
-    const myOrders=await bookingCollection.find(query).toArray()
-    res.send(myOrders)
-  })
+    const myOrders = await bookingCollection.find(query).toArray();
+    res.send(myOrders);
+  });
 
   app.get("/payment/:id", async (req, res) => {
-    const id = req.params.id
-    const query = { _id: ObjectId(id) }
-    const orderItem = await bookingCollection.findOne(query)
-    res.send(orderItem)
+    const id = req.params.id;
+    const query = { _id: ObjectId(id) };
+    const orderItem = await bookingCollection.findOne(query);
+    res.send(orderItem);
   });
 
   // get advertised book itmes
