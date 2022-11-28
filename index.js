@@ -21,6 +21,26 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
+// varify Token 
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send("unauthorized access");
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  jwt.verify(token, process.env.SECRET_ACCESS_TOKEN, function (err, decoded) {
+    if (err) {
+      return res.status(403).send({ message: "forbidden access" });
+      console.log("err");
+    }
+    req.decoded = decoded;
+    console.log("hel", decoded);
+    next();
+  });
+}
+
 async function run() {
   // data collection
   const blogsCollection = client.db("bookAndCo").collection("blogs");
@@ -32,8 +52,20 @@ async function run() {
   const bookingCollection = client.db("bookAndCo").collection("bookingBooks");
   const paymentsCollection = client.db("bookAndCo").collection("paymentsItem");
 
+  // site admin verfication ... 
+  const verifyAdmin = async (req, res, next) => {
+    const decodedEmail = req.decoded.email;
+    const query = { email: decodedEmail };
+    const user = await usersCollection.findOne(query);
+
+    if (user?.role !== "Admin") {
+      return res.status(403).send({ message: "forbidden access" });
+    }
+    next();
+  };
+
   // booking item payment api
-  app.post("/create-payment-intent", async (req, res) => {
+  app.post("/create-payment-intent",verifyJWT, async (req, res) => {
     const booking = req.body;
     const price = booking.price;
     const amount = price * 100;
@@ -122,7 +154,7 @@ async function run() {
     res.send({ isSeller: user?.role === "Seller" });
   });
 
-  app.put("/admin/sellerVarified", async (req, res) => {
+  app.put("/admin/sellerVarified",verifyJWT, async (req, res) => {
     const email = req.query.email;
     const filter = {
       email: email,
@@ -138,7 +170,7 @@ async function run() {
   });
 
   // user delete api 
-  app.put("/admin/deleteUser/:id", async (req, res) => {
+  app.put("/admin/deleteUser/:id",verifyJWT, async (req, res) => {
     const id = req.params.id
     const query = {
       _id:ObjectId(id)
@@ -172,7 +204,7 @@ async function run() {
 
 
   // add a book selling post in database
-  app.post("/seller/addBookItem", async (req, res) => {
+  app.post("/seller/addBookItem",verifyJWT, async (req, res) => {
     const bookInfo = req.body;
     const result = await booksCollection.insertOne(bookInfo);
     res.send(result);
@@ -180,7 +212,7 @@ async function run() {
 
 
   // get a seller all selling book
-  app.get("/seller/myBooks", async (req, res) => {
+  app.get("/seller/myBooks",verifyJWT, async (req, res) => {
     const email = req.query.email;
     const query = {
       sellerEmail: email,
@@ -206,7 +238,7 @@ async function run() {
 
 
   // get all reported item for admin
-  app.get("/reportedItems", async (req, res) => {
+  app.get("/reportedItems",verifyJWT, async (req, res) => {
     const filter = {
       isReported: true,
     };
@@ -216,7 +248,7 @@ async function run() {
 
 
   // reported item delete by admin
-  app.delete("/admin/reportedItems/:id", async (req, res) => {
+  app.delete("/admin/reportedItems/:id",verifyJWT, async (req, res) => {
     const id = req.params.id;
     const query = { _id: ObjectId(id) };
     const result = await booksCollection.deleteOne(query);
@@ -225,7 +257,7 @@ async function run() {
 
 
   // add for advertised api
-  app.put("/seller/advertised/:id", async (req, res) => {
+  app.put("/seller/advertised/:id",verifyJWT, async (req, res) => {
     const id = req.params.id;
     const filter = { _id: ObjectId(id) };
     const options = { upsert: true };
@@ -240,7 +272,7 @@ async function run() {
 
 
   // get single buyer all order
-  app.get("/buyer/myOrders", async (req, res) => {
+  app.get("/buyer/myOrders",verifyJWT, async (req, res) => {
     const email = req.query.email;
     const query = {
       buyerEmail: email,
@@ -266,20 +298,19 @@ async function run() {
   });
 
   // single category product data
-  http: app.get("/singleCategory/:id", async (req, res) => {
-    const id = req.params.id;
-    const query = { _id: ObjectId(id) };
-    const catagory = await bookCategorysCollection.findOne(query);
-    const catagoryName = catagory.category;
-    const filter = {
-      bookCategory: catagoryName,
-    };
+   app.get("/singleCategory/:id",verifyJWT, async (req, res) => {
+     const id = req.params.id;
+     const query = { _id: ObjectId(id) };
+     const catagory = await bookCategorysCollection.findOne(query);
+     const catagoryName = catagory.category;
+     const filter = {
+       bookCategory: catagoryName,
+     };
 
-    const categoryBooks = await booksCollection.find(filter).toArray();
-    
+     const categoryBooks = await booksCollection.find(filter).toArray();
 
-    res.send(categoryBooks);
-  });
+     res.send(categoryBooks);
+   });
 
   app.get("/blogs", async (req, res) => {
     const query = {};
@@ -295,7 +326,7 @@ async function run() {
   });
 
   // only book category name api
-  app.get("/categoryNames", async (req, res) => {
+  app.get("/categoryNames",verifyJWT, async (req, res) => {
     const query = {};
     const categoryName = await bookCategorysCollection
       .find(query)
@@ -319,14 +350,14 @@ async function run() {
   });
 
   // get all sellers
-  app.get("/allSellers", async (req, res) => {
+  app.get("/allSellers",verifyJWT, async (req, res) => {
     const query = { role: "Seller" };
     const allSeller = await usersCollection.find(query).toArray();
     res.send(allSeller);
   });
 
   // get all buyers
-  app.get("/allBuyers", async (req, res) => {
+  app.get("/allBuyers",verifyJWT,  async (req, res) => {
     const query = { role: "Buyer" };
     const allBuyers = await usersCollection.find(query).toArray();
     res.send(allBuyers);
