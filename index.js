@@ -51,6 +51,7 @@ async function run() {
   const booksCollection = client.db("bookAndCo").collection("books");
   const bookingCollection = client.db("bookAndCo").collection("bookingBooks");
   const paymentsCollection = client.db("bookAndCo").collection("paymentsItem");
+  const feedbackCollection =client.db("bookAndCo").collection("feedbacks")
 
   // site admin verfication ... 
   const verifyAdmin = async (req, res, next) => {
@@ -131,6 +132,12 @@ async function run() {
     }
     res.status(403).send({ accessToken: "" });
   });
+
+  app.get("/feedbacks", async (req, res) => {
+    const query = {}
+    const feedbacks= await feedbackCollection.find(query).toArray()
+    res.send(feedbacks)
+  })
 
   // cheack user admin role
   app.get("/users/admin/:email", async (req, res) => {
